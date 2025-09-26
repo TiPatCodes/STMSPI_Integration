@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_host.h"
+#include <stdint.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -76,6 +77,13 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	uint8_t * buffer;
+	uint8_t buffer_length  =  1 ;
+	HAL_StatusTypeDef  err;
+	uint32_t  T_out = 100;
+
+
+
 
   /* USER CODE END 1 */
 
@@ -99,9 +107,35 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_I2S3_Init();
-  MX_SPI1_Init();
+  MX_SPI1_Init(); /// this will initialize the SPI and pull low the CS clock
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 2 */
+
+
+  // 1. Set to 3 wire
+  // 2. Set to use V bias
+  // 3.  Set the Conversion mode
+  //
+
+  err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
+
+
+// 4. read the RTD MSB
+// 5. read the RTD LSB
+
+
+  // 6. Check the fault status
+  err = HAL_SPI_Receive(&hspi1, buffer, buffer_length,T_out);
+
+
+
+
+
+// Reset the CS.
+  if (HAL_SPI_DeInit(&hspi1) != HAL_OK)
+    {
+      Error_Handler();
+    }
 
   /* USER CODE END 2 */
 
@@ -252,7 +286,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
   hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
