@@ -1,0 +1,17 @@
+#remove folder 
+Debug/
+
+
+
+*.launch
+*.mk
+*.o
+*.elf
+*.pdf
+*.xml
+
+
+
+
+
+

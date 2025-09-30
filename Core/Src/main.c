@@ -77,7 +77,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	uint8_t * buffer;
+	uint8_t buffer[8] = {0,0,0,0,0,0,0,0};
 	uint8_t buffer_length  =  1 ;
 	HAL_StatusTypeDef  err;
 	uint32_t  T_out = 100;
@@ -111,27 +111,72 @@ int main(void)
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 2 */
 
+  // with buffer[0]as address
+  buffer[0] =  0x80;
+  printf("Writing to address 0x%#x\n", buffer[0]);
 
+
+  //with buffer[1] as data
+  buffer[1] &= ~(0xFF);
   // 1. Set to 3 wire
-  // 2. Set to use V bias
-  // 3.  Set the Conversion mode
-  //
+  buffer[1] |= (1U << 4);
+  printf("Set to 3 wire -  0x%x\n", buffer[1]);
 
+  // 2. Set to use V bias
+  buffer[1] |= (1U << 7);
+  printf("Set to V bias -  0x%#x\n", buffer[1]);
+
+  // 3. Set the Conversion mode
+  buffer[1] |= (1U << 6);
+  printf("Set to Conversion mode -  0x%#x\n", buffer[1]);
+
+  // 4. Set the fault status clear bit
+  buffer[1] |= (1U << 1);
+  printf("Set to fault status bit  -  0x%#x\n", buffer[1]);
+
+  // 5. Set the 50 Hz
+  buffer[1] |= (1U << 0);
+  printf("Set to 50 status bit  -  0x%#x\n", buffer[1]);
+
+  buffer_length = 2;
+  err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
+  if (!err)
+  {
+	  printf("Wrote successfully Configuration\n");
+  }
+  else
+  {
+	  printf("Error\n");
+  }
+
+  buffer[1] &= ~(0xFF);
+  buffer[0] = 0x01;
   err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
 
-
-// 4. read the RTD MSB
-// 5. read the RTD LSB
+  buffer[0] &= ~(0xFF);
+  buffer[1] &= ~(0xFF);
+  // 4. read the RTD MSB
+  err = HAL_SPI_Receive(&hspi1, buffer, buffer_length,T_out);
+  // 5. read the RTD LSB
+  if (!err)
+    {
+  	  printf("---- ox%x\t\n", buffer[0]);
+  	  printf("---- ox%x\t\n", buffer[1]);
+    }
+    else
+    {
+  	  printf("Error\n");
+    }
 
 
   // 6. Check the fault status
-  err = HAL_SPI_Receive(&hspi1, buffer, buffer_length,T_out);
 
 
 
 
 
-// Reset the CS.
+
+  // Reset the CS.
   if (HAL_SPI_DeInit(&hspi1) != HAL_OK)
     {
       Error_Handler();
