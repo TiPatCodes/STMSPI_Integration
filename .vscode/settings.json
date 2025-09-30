@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.robot": "robotframework",
+        "stdlib.h": "c"
+    }
+}

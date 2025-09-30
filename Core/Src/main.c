@@ -19,7 +19,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_host.h"
-#include <stdint.h>
+#include  <stdlib.h>
+#include  <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -77,7 +78,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	uint8_t buffer[8] = {0,0,0,0,0,0,0,0};
+	uint8_t buffer[8] ;
 	uint8_t buffer_length  =  1 ;
 	HAL_StatusTypeDef  err;
 	uint32_t  T_out = 100;
@@ -110,14 +111,14 @@ int main(void)
   MX_SPI1_Init(); /// this will initialize the SPI and pull low the CS clock
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 2 */
-
+//-------------------------------------------------------------------------------
   // with buffer[0]as address
-  buffer[0] =  0x80;
+  buffer[0] |=  0x80;  // cannot directly assigned the value in HEX
   printf("Writing to address 0x%#x\n", buffer[0]);
 
 
   //with buffer[1] as data
-  buffer[1] &= ~(0xFF);
+  buffer[1] &=  0x00;
   // 1. Set to 3 wire
   buffer[1] |= (1U << 4);
   printf("Set to 3 wire -  0x%x\n", buffer[1]);
@@ -132,7 +133,7 @@ int main(void)
 
   // 4. Set the fault status clear bit
   buffer[1] |= (1U << 1);
-  printf("Set to fault status bit  -  0x%#x\n", buffer[1]);
+  printf("Set to fault status clear  bit  -  0x%#x\n", buffer[1]);
 
   // 5. Set the 50 Hz
   buffer[1] |= (1U << 0);
@@ -148,25 +149,32 @@ int main(void)
   {
 	  printf("Error\n");
   }
+//----------------------- READ RTD -------------------------
+  uint8_t cNT = 5;
+  while (cNT)
+  {
+	  buffer[1] &= 0x00;
+	  // setting the address of RTD MSBs 0x01 =  0000 0001b
+	  buffer[0] = 0b00000001 ;
+	  err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
 
-  buffer[1] &= ~(0xFF);
-  buffer[0] = 0x01;
-  err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
+	  buffer[0] &= 0x00;
+	  buffer[1] &= 0x00;
 
-  buffer[0] &= ~(0xFF);
-  buffer[1] &= ~(0xFF);
-  // 4. read the RTD MSB
-  err = HAL_SPI_Receive(&hspi1, buffer, buffer_length,T_out);
-  // 5. read the RTD LSB
-  if (!err)
-    {
-  	  printf("---- ox%x\t\n", buffer[0]);
-  	  printf("---- ox%x\t\n", buffer[1]);
-    }
-    else
-    {
-  	  printf("Error\n");
-    }
+	  // 4. read the RTD MSB
+	  err = HAL_SPI_Receive(&hspi1, buffer, buffer_length,T_out);
+	  // 5. read the RTD LSB
+	  if (!err)
+		{
+		  printf("%d---- 0x%x\t\n",cNT, buffer[0]);
+		  printf("%d---- 0x%x\t\n",cNT, buffer[1]);
+		}
+		else
+		{
+		  printf("Error\n");
+		}
+	  cNT-- ;
+  }
 
 
   // 6. Check the fault status
@@ -176,11 +184,8 @@ int main(void)
 
 
 
-  // Reset the CS.
-  if (HAL_SPI_DeInit(&hspi1) != HAL_OK)
-    {
-      Error_Handler();
-    }
+  // Reset the CS.  Don't need it , while using NSS hardware after each SPI transaction the NSS get high.
+
 
   /* USER CODE END 2 */
 
