@@ -19,11 +19,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_host.h"
-#include  <stdlib.h>
-#include  <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -34,6 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
 
 /* USER CODE END PD */
 
@@ -67,7 +67,8 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+const uint16_t  rTD_rEF =  4000;
+const uint16_t  mAX_tEMP =  32767;
 /* USER CODE END 0 */
 
 /**
@@ -83,6 +84,8 @@ int main(void)
 	HAL_StatusTypeDef  err;
 	uint32_t  T_out = 100;
 
+	uint16_t Raw_data = 0;
+	uint16_t temp;
 
 
 
@@ -108,75 +111,108 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_I2S3_Init();
-  MX_SPI1_Init(); /// this will initialize the SPI and pull low the CS clock
+  MX_SPI1_Init();
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 2 */
-//-------------------------------------------------------------------------------
-  // with buffer[0]as address
-  buffer[0] |=  0x80;  // cannot directly assigned the value in HEX
-  printf("Writing to address 0x%#x\n", buffer[0]);
-
-
-  //with buffer[1] as data
-  buffer[1] &=  0x00;
-  // 1. Set to 3 wire
-  buffer[1] |= (1U << 4);
-  printf("Set to 3 wire -  0x%x\n", buffer[1]);
-
-  // 2. Set to use V bias
-  buffer[1] |= (1U << 7);
-  printf("Set to V bias -  0x%#x\n", buffer[1]);
-
-  // 3. Set the Conversion mode
-  buffer[1] |= (1U << 6);
-  printf("Set to Conversion mode -  0x%#x\n", buffer[1]);
-
-  // 4. Set the fault status clear bit
-  buffer[1] |= (1U << 1);
-  printf("Set to fault status clear  bit  -  0x%#x\n", buffer[1]);
-
-  // 5. Set the 50 Hz
-  buffer[1] |= (1U << 0);
-  printf("Set to 50 status bit  -  0x%#x\n", buffer[1]);
-
-  buffer_length = 2;
-  err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
-  if (!err)
+//--------------------------WRITE CONFIG 80h------------------------------------------
+  if (! (HAL_GPIO_ReadPin(GPIOA,15)))  // to check if the CS pin is low or not
   {
-	  printf("Wrote successfully Configuration\n");
-  }
+	  // with buffer[0]as address
+	  buffer[0] |=  0x80;
+	  printf("Writing to address 0x%#x\n", buffer[0]);
+
+
+	  //with buffer[1] as data
+	  buffer[1] &=  0x00;
+	  // 1. Set to 3 wire
+	  buffer[1] |= (1U << 4);
+	  printf("Set to 3 wire -  0x%x\n", buffer[1]);
+
+	  // 2. Set to use V bias
+	  buffer[1] |= (1U << 7);
+	  printf("Set to V bias -  0x%#x\n", buffer[1]);
+
+	  // 3. Set the Conversion mode
+	  buffer[1] |= (1U << 6);
+	  printf("Set to Conversion mode -  0x%#x\n", buffer[1]);
+
+	  // 4. Set the fault status clear bit
+	  buffer[1] |= (1U << 1);
+	  printf("Set to fault status clear  bit  -  0x%#x\n", buffer[1]);
+
+	  // 5. Set the 50 Hz
+	  buffer[1] |= (1U << 0);
+	  printf("Set to 50 status bit  -  0x%#x\n", buffer[1]);
+
+	  buffer_length = 2;
+	  err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
+	  if (!err)
+	  {
+		  printf("Wrote successfully Configuration -  80h \n");
+	  }
+	  else
+	  {
+		  printf("Error in writing to Configuration \n");
+	  }
+}
   else
   {
-	  printf("Error\n");
+	  printf(" The CS bit is not pull down");
+
   }
-//----------------------- READ RTD -------------------------
+
+
+//----------------------- READ RTD -----01h and 02h  ----------------
   uint8_t cNT = 5;
-  while (cNT)
+//  while (1)
+  while (!HAL_GPIO_ReadPin(GPIOA,15))
   {
-	  buffer[1] &= 0x00;
-	  // setting the address of RTD MSBs 0x01 =  0000 0001b
-	  buffer[0] = 0b00000001 ;
-	  err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
-
-	  buffer[0] &= 0x00;
-	  buffer[1] &= 0x00;
-
 	  // 4. read the RTD MSB
-	  err = HAL_SPI_Receive(&hspi1, buffer, buffer_length,T_out);
-	  // 5. read the RTD LSB
+	  // setting the address of RTD MSBs 0x01 =  0000 0001b
+	  buffer[0] |= 0b00000001 ;  // same as 0x01
+	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
+	  buffer[0] = 0x00;
+	  err = HAL_SPI_Receive(&hspi1, buffer, 1,T_out);
+	  // Take inTO RAW BUFFER
+	  Raw_data |= ((uint16_t)buffer[0] <<8);
 	  if (!err)
-		{
-		  printf("%d---- 0x%x\t\n",cNT, buffer[0]);
-		  printf("%d---- 0x%x\t\n",cNT, buffer[1]);
-		}
-		else
-		{
-		  printf("Error\n");
-		}
-	  cNT-- ;
+	  		{
+	  		  printf("buffer[0] RTD MSB---- 0x%x\t\n", buffer[0]);
+	  		 printf("Raw_data  ---- 0x%x\t\n",Raw_data);
+	  		}
+	  else
+	  		{
+	  		  printf("Error\n");
+
+	  		}
+
+	  // 5. read the RTD LSB  0x02
+	  buffer[0] |= 0x02;
+	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
+	  buffer[0] = 0x00;
+	  err = HAL_SPI_Receive(&hspi1, buffer, 1,T_out);
+	  // Take inTO RAW BUFFER
+	  Raw_data |= (buffer[0] & 0xFE);
+	  if (!err)
+		  		{
+		  		  printf("buffer[0] RTd LSB ---- 0x%x\t\n", buffer[0]);
+		  		 printf("Raw_data  ---- 0x%x\t\n",Raw_data);
+		  		}
+	  else
+			{
+			  printf("Error\n");
+
+			}
+
+	  // ----------------------CONVERT THE RAW DATA into Temperature
+
+	  temp =  (Raw_data / rTD_rEF ) * mAX_tEMP;
+
+	  printf ("Temperature value   %d \n ", temp);
+
   }
 
-
+  printf("%d\n",cNT);
   // 6. Check the fault status
 
 
@@ -337,7 +373,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
