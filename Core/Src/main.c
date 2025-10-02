@@ -67,8 +67,8 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-const uint16_t  rTD_rEF =  4000;
-const uint16_t  mAX_tEMP =  32767;
+const float  rTD_rEF =  4000.0;
+const float  mAX_tEMP =  32768.0;
 /* USER CODE END 0 */
 
 /**
@@ -85,7 +85,7 @@ int main(void)
 	uint32_t  T_out = 100;
 
 	uint16_t Raw_data = 0;
-	uint16_t temp;
+	float temp;
 
 
 
@@ -114,35 +114,41 @@ int main(void)
   MX_SPI1_Init();
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 2 */
+  // ----------------PULL CS PIN LOW --------- GPIOA PIN 15 ------------
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+  printf("--  STARTING SPI ---- CS LOW \n\n");
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+
+
 //--------------------------WRITE CONFIG 80h------------------------------------------
-  if (! (HAL_GPIO_ReadPin(GPIOA,15)))  // to check if the CS pin is low or not
+  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))  // to check if the CS pin is low or not
   {
 	  // with buffer[0]as address
 	  buffer[0] |=  0x80;
-	  printf("Writing to address 0x%#x\n", buffer[0]);
+	  printf("Writing to address %#x\n", buffer[0]);
 
 
 	  //with buffer[1] as data
 	  buffer[1] &=  0x00;
 	  // 1. Set to 3 wire
 	  buffer[1] |= (1U << 4);
-	  printf("Set to 3 wire -  0x%x\n", buffer[1]);
+	  printf("Set to 3 wire -  %#x\n", buffer[1]);
 
 	  // 2. Set to use V bias
 	  buffer[1] |= (1U << 7);
-	  printf("Set to V bias -  0x%#x\n", buffer[1]);
+	  printf("Set to V bias -  %#x\n", buffer[1]);
 
 	  // 3. Set the Conversion mode
 	  buffer[1] |= (1U << 6);
-	  printf("Set to Conversion mode -  0x%#x\n", buffer[1]);
+	  printf("Set to Conversion mode -  %#x\n", buffer[1]);
 
 	  // 4. Set the fault status clear bit
 	  buffer[1] |= (1U << 1);
-	  printf("Set to fault status clear  bit  -  0x%#x\n", buffer[1]);
+	  printf("Set to fault status clear  bit  -  %#x\n", buffer[1]);
 
 	  // 5. Set the 50 Hz
 	  buffer[1] |= (1U << 0);
-	  printf("Set to 50 status bit  -  0x%#x\n", buffer[1]);
+	  printf("Set to 50 status bit  -  %#x\n", buffer[1]);
 
 	  buffer_length = 2;
 	  err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
@@ -163,22 +169,22 @@ int main(void)
 
 
 //----------------------- READ RTD -----01h and 02h  ----------------
-  uint8_t cNT = 5;
-//  while (1)
-  while (!HAL_GPIO_ReadPin(GPIOA,15))
+
+  while (!HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15))
   {
+
 	  // 4. read the RTD MSB
 	  // setting the address of RTD MSBs 0x01 =  0000 0001b
-	  buffer[0] |= 0b00000001 ;  // same as 0x01
+	  buffer[0] |= 0x01 ;
 	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-	  buffer[0] = 0x00;
+	  buffer[0] |= 0x00;
 	  err = HAL_SPI_Receive(&hspi1, buffer, 1,T_out);
 	  // Take inTO RAW BUFFER
-	  Raw_data |= ((uint16_t)buffer[0] <<8);
+	  Raw_data |= ((uint16_t)buffer[0] << 8U );
 	  if (!err)
 	  		{
-	  		  printf("buffer[0] RTD MSB---- 0x%x\t\n", buffer[0]);
-	  		 printf("Raw_data  ---- 0x%x\t\n",Raw_data);
+	  		  printf("buffer[0] RTD MSB ---- %#x\t\n", buffer[0]);
+	  		  printf("Raw_data  ---- %#x\t\n",Raw_data);
 	  		}
 	  else
 	  		{
@@ -189,14 +195,14 @@ int main(void)
 	  // 5. read the RTD LSB  0x02
 	  buffer[0] |= 0x02;
 	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-	  buffer[0] = 0x00;
+	  buffer[0] |= 0x00;
 	  err = HAL_SPI_Receive(&hspi1, buffer, 1,T_out);
 	  // Take inTO RAW BUFFER
 	  Raw_data |= (buffer[0] & 0xFE);
 	  if (!err)
 		  		{
-		  		  printf("buffer[0] RTd LSB ---- 0x%x\t\n", buffer[0]);
-		  		 printf("Raw_data  ---- 0x%x\t\n",Raw_data);
+		  		  printf("buffer[0] RTD LSB ---- %#x\t\n", buffer[0]);
+		  		  printf("Raw_data  ---- %#x\t\n",Raw_data);
 		  		}
 	  else
 			{
@@ -204,23 +210,29 @@ int main(void)
 
 			}
 
+	  // 6. Check the fault status D0 of 02h
+	  if(buffer[0] & 0x01)
+	  {
+		  printf ("Fault D0 bit is set at 02h\n");
+		  break;
+	  }
+
 	  // ----------------------CONVERT THE RAW DATA into Temperature
 
-	  temp =  (Raw_data / rTD_rEF ) * mAX_tEMP;
+	  temp =  ((float)Raw_data * rTD_rEF ) / mAX_tEMP;
+	  printf ("Temperature value   %f\n ", temp);
 
-	  printf ("Temperature value   %d \n ", temp);
-
+	  Raw_data |=  0x0000;
   }
 
-  printf("%d\n",cNT);
-  // 6. Check the fault status
+  printf("No READ --- %d\n",cNT);
 
 
 
+// ----------- PULL UP CS PIN ------- GPIOA PIN 15 --------------------------------------------
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+  printf("--  STOPING SPI ---- CS HIGH \n\n");
 
-
-
-  // Reset the CS.  Don't need it , while using NSS hardware after each SPI transaction the NSS get high.
 
 
   /* USER CODE END 2 */
@@ -372,7 +384,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
   hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
@@ -417,6 +429,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin
                           |Audio_RST_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : CS_I2C_SPI_Pin */
   GPIO_InitStruct.Pin = CS_I2C_SPI_Pin;
@@ -468,6 +483,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : OTG_FS_OverCurrent_Pin */
   GPIO_InitStruct.Pin = OTG_FS_OverCurrent_Pin;
