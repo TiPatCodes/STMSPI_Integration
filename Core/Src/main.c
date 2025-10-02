@@ -154,7 +154,7 @@ int main(void)
 	  err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
 	  if (!err)
 	  {
-		  printf("Wrote successfully Configuration -  80h \n");
+		  printf("Wrote successfully Configuration -  80h \n\n");
 	  }
 	  else
 	  {
@@ -163,7 +163,7 @@ int main(void)
 }
   else
   {
-	  printf(" The CS bit is not pull down");
+	  printf(" The CS bit is not pull down\n\n");
 
   }
 
@@ -176,11 +176,11 @@ int main(void)
 	  // 4. read the RTD MSB
 	  // setting the address of RTD MSBs 0x01 =  0000 0001b
 	  buffer[0] |= 0x01 ;
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-	  buffer[0] |= 0x00;
-	  err = HAL_SPI_Receive(&hspi1, buffer, 1,T_out);
+//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
+//	  buffer[0] |= 0x00;
+	  err = HAL_SPI_Receive(&hspi1, buffer, 2,T_out);
 	  // Take inTO RAW BUFFER
-	  Raw_data |= ((uint16_t)buffer[0] << 8U );
+	  Raw_data |= ((uint16_t)buffer[1] << 8U );
 	  if (!err)
 	  		{
 	  		  printf("buffer[0] RTD MSB ---- %#x\t\n", buffer[0]);
@@ -194,11 +194,11 @@ int main(void)
 
 	  // 5. read the RTD LSB  0x02
 	  buffer[0] |= 0x02;
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-	  buffer[0] |= 0x00;
-	  err = HAL_SPI_Receive(&hspi1, buffer, 1,T_out);
+//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
+//	  buffer[0] |= 0x00;
+	  err = HAL_SPI_Receive(&hspi1, buffer, 2,T_out);
 	  // Take inTO RAW BUFFER
-	  Raw_data |= (buffer[0] & 0xFE);
+	  Raw_data |= (buffer[1] & 0xFE);
 	  if (!err)
 		  		{
 		  		  printf("buffer[0] RTD LSB ---- %#x\t\n", buffer[0]);
@@ -211,7 +211,7 @@ int main(void)
 			}
 
 	  // 6. Check the fault status D0 of 02h
-	  if(buffer[0] & 0x01)
+	  if(buffer[1] & 0x01)
 	  {
 		  printf ("Fault D0 bit is set at 02h\n");
 		  break;
@@ -225,7 +225,7 @@ int main(void)
 	  Raw_data |=  0x0000;
   }
 
-  printf("No READ --- %d\n",cNT);
+  printf("No READ --- \n");
 
 
 
