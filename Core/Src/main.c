@@ -79,13 +79,13 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	uint8_t buffer[8] ;
+	uint8_t buffer[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 	uint8_t buffer_length  =  1 ;
 	HAL_StatusTypeDef  err;
 	uint32_t  T_out = 100;
 
 	uint16_t Raw_data = 0;
-	float temp;
+	float temp = 0.0;
 
 
 
@@ -129,7 +129,7 @@ int main(void)
 
 
 	  //with buffer[1] as data
-	  buffer[1] &=  0x00;
+	  buffer[1] =  0x00;
 	  // 1. Set to 3 wire
 	  buffer[1] |= (1U << 4);
 	  printf("Set to 3 wire -  %#x\n", buffer[1]);
@@ -147,10 +147,11 @@ int main(void)
 	  printf("Set to fault status clear  bit  -  %#x\n", buffer[1]);
 
 	  // 5. Set the 50 Hz
-	  buffer[1] |= (1U << 0);
-	  printf("Set to 50 status bit  -  %#x\n", buffer[1]);
+//	  buffer[1] |= (1U << 0);
+//	  printf("Set to 50 status bit  -  %#x\n", buffer[1]);
 
 	  buffer_length = 2;
+
 	  err = HAL_SPI_Transmit(&hspi1, buffer, buffer_length, T_out);
 	  if (!err)
 	  {
@@ -168,22 +169,28 @@ int main(void)
   }
 
 
+
+
+
 //----------------------- READ RTD -----01h and 02h  ----------------
 
   while (!HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15))
   {
+	  buffer[0] =  0x00;
+	  buffer[1] =  0x00;
+	  uint8_t rxData = 0;
 
 	  // 4. read the RTD MSB
 	  // setting the address of RTD MSBs 0x01 =  0000 0001b
-	  buffer[0] |= 0x01 ;
-//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-//	  buffer[0] |= 0x00;
-	  err = HAL_SPI_Receive(&hspi1, buffer, 2,T_out);
+	  buffer[0] = 0x01 ;
+	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
+//	  buffer[0] = 0x00;
+	  err = HAL_SPI_Receive(&hspi1, &rxData,1,T_out);
 	  // Take inTO RAW BUFFER
-	  Raw_data |= ((uint16_t)buffer[1] << 8U );
+	  Raw_data |= ((uint16_t)rxData << 8U );
 	  if (!err)
 	  		{
-	  		  printf("buffer[0] RTD MSB ---- %#x\t\n", buffer[0]);
+	  		  printf("RTD MSB ---- %#x\t\n", rxData);
 	  		  printf("Raw_data  ---- %#x\t\n",Raw_data);
 	  		}
 	  else
@@ -192,16 +199,19 @@ int main(void)
 
 	  		}
 
+	  buffer[0] =  0x00;
+	  buffer[1] =  0x00;
+
 	  // 5. read the RTD LSB  0x02
-	  buffer[0] |= 0x02;
-//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-//	  buffer[0] |= 0x00;
-	  err = HAL_SPI_Receive(&hspi1, buffer, 2,T_out);
+	  buffer[0] = 0x02;
+	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
+//	  buffer[0] = 0x00;
+	  err = HAL_SPI_Receive(&hspi1, &rxData, 1,T_out);
 	  // Take inTO RAW BUFFER
-	  Raw_data |= (buffer[1] & 0xFE);
+	  Raw_data |= (rxData & 0x00FE);
 	  if (!err)
 		  		{
-		  		  printf("buffer[0] RTD LSB ---- %#x\t\n", buffer[0]);
+		  		  printf("RTD LSB ---- %#x\t\n", rxData);
 		  		  printf("Raw_data  ---- %#x\t\n",Raw_data);
 		  		}
 	  else
@@ -211,18 +221,16 @@ int main(void)
 			}
 
 	  // 6. Check the fault status D0 of 02h
-	  if(buffer[1] & 0x01)
+	  if(rxData & 0x01)
 	  {
 		  printf ("Fault D0 bit is set at 02h\n");
 		  break;
 	  }
 
 	  // ----------------------CONVERT THE RAW DATA into Temperature
-
 	  temp =  ((float)Raw_data * rTD_rEF ) / mAX_tEMP;
-	  printf ("Temperature value   %f\n ", temp);
-
-	  Raw_data |=  0x0000;
+	  printf ("Temperature value   %f\n", temp);
+	  Raw_data =  0x0000;
   }
 
   printf("No READ --- \n");
