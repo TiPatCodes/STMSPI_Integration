@@ -33,6 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define HAL_DELAY  (10)
 
 
 /* USER CODE END PD */
@@ -67,8 +68,14 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-const float  rTD_rEF =  4000.0;
-const float  mAX_tEMP =  32768.0;
+
+uint8_t rxData[2] = {0x00,0x00};
+uint8_t rfData[2] = {0x00,0x00};
+uint8_t wrtBuffer[2] = {0x00,0x00};
+HAL_StatusTypeDef  err;
+uint8_t  T_out = 100;
+
+
 /* USER CODE END 0 */
 
 /**
@@ -79,14 +86,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	uint8_t buffer[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-	HAL_StatusTypeDef  err;
-	uint8_t  T_out = 255;
-
-//	uint16_t Raw_data = 0;
-//	float temp = 0.0;
-
-
 
   /* USER CODE END 1 */
 
@@ -117,494 +116,63 @@ int main(void)
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
 
-
-//  printf("--  STARTING SPI ---- CS LOW for read 00h Initial\n");
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-//  //----------------------- READ CONFIG FIRST  00h----------------
-//  uint8_t rxData = 0;
-//  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-//  {
-//	  // reading the configuration register  back again to validate write
-//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-//	  err = HAL_SPI_Receive(&hspi1, &rxData,1,T_out);
-//
-//	  if (!err)
-//	  {
-//		  printf("Configuration register  ---- 0x%02x\t\n", buffer[0]);
-//		  printf("Buffer[1] ---- 0x%02x\t\n", buffer[1]);
-//		  printf("Initial Value of Configuration Data  ---- 0x%02x\t\n", rxData);
-//	  }
-//	  else
-//	  {
-//		  printf("Error\n");
-//	  }
-//
-//  }
-//  printf("--  STOPING SPI ---- CS HIGH \n\n");
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-//
-//  printf("--  STARTING SPI ---- CS LOW for read 03/04h Initial\n");
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-//  //----------------------- READ HIGH FAULT THRESHOLD  03/4h----------------
-//  buffer[0] =  0x03;
-//  uint8_t rfhtMSB = 0;
-//  uint8_t rfhtLSB = 0;
-//  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-//  {
-//	  // reading the configuration register  back again to validate write
-//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-//	  err = HAL_SPI_Receive(&hspi1, &rfhtMSB,1,T_out);
-//
-//	  if (!err)
-//	  {
-//		  printf("Configuration register  ---- 0x%02x\t\n", buffer[0]);
-//		  printf("Buffer[1] ---- 0x%02x\t\n", buffer[1]);
-//		  printf("Initial Value of rfhtMSB  ---- 0x%02x\t\n", rfhtMSB);
-//	  }
-//	  else
-//	  {
-//		  printf("Error\n");
-//	  }
-//
-//  }
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-//  buffer[0] =  0x04;
-//  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-//  {
-//	  // reading the configuration register  back again to validate write
-//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-//	  err = HAL_SPI_Receive(&hspi1, &rfhtLSB,1,T_out);
-//
-//	  if (!err)
-//	  {
-//		  printf("Configuration register  ---- 0x%02x\t\n", buffer[0]);
-//		  printf("Buffer[1] ---- 0x%02x\t\n", buffer[1]);
-//		  printf("Initial Value of rfhtLSB  ---- 0x%02x\t\n", rfhtLSB);
-//	  }
-//	  else
-//	  {
-//		  printf("Error\n");
-//	  }
-//
-//  }
-//  printf("--  STOPING SPI ---- CS HIGH \n\n");
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-//
-//  printf("--  STARTING SPI ---- CS LOW for read 05/06h Initial\n");
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-//  //----------------------- READ LOW FAULT THRESHOLD  05/6h----------------
-//  buffer[0] = 0x05;
-//  uint8_t rlftMSB = 0;
-//  uint8_t rlftLSB = 0;
-//  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-//  {
-//	  // reading the configuration register  back again to validate write
-//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-//	  err = HAL_SPI_Receive(&hspi1, &rlftMSB,1,T_out);
-//
-//	  if (!err)
-//	  {
-//		  printf("Configuration register  ---- 0x%02x\t\n", buffer[0]);
-//		  printf("Buffer[1] ---- 0x%02x\t\n", buffer[1]);
-//		  printf("Initial Value of rlftMSB  ---- 0x%02x\t\n", rlftMSB);
-//	  }
-//	  else
-//	  {
-//		  printf("Error\n");
-//	  }
-//
-//  }
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-//  buffer[0] = 0x06;
-//  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-//  {
-//	  // reading the configuration register  back again to validate write
-//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-//	  err = HAL_SPI_Receive(&hspi1, &rlftLSB,1,T_out);
-//
-//	  if (!err)
-//	  {
-//		  printf("Configuration register  ---- 0x%02x\t\n", buffer[0]);
-//		  printf("Buffer[1] ---- 0x%02x\t\n", buffer[1]);
-//		  printf("Initial Value rlftLSB  ---- 0x%02x\t\n", rlftLSB);
-//	  }
-//	  else
-//	  {
-//		  printf("Error\n");
-//	  }
-//
-//  }
-//  printf("--  STOPING SPI ---- CS HIGH \n\n");
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
   //--------------------------WRITE CONFIG 80h---------------------------
   // with buffer[0]as address
-  buffer[0] = 0x00;
-  buffer[0] |=  0x80;
-  printf("Writing to address 0x%02x\n", buffer[0]);
-
+  wrtBuffer[0] =  0x80;
   //with buffer[1] as data
-  // 2. Set to use V bias
-  buffer[1] |= (1 << 7);
-  printf("Set to V bias -  0x%02x\n", buffer[1]);
-
-  printf("--  STARTING SPI ---- CS LOW for write 80h BIAS \n");
+  wrtBuffer[1] =  0xD2;
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
   if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))  // to check if the CS pin is low or not
   {
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 2, T_out);
+	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 2, T_out);
 	  if (!err)
 	  {
-		  printf("Wrote successfully Configuration -  80h BIAS\n");
-	  }
-	  else
-	  {
-		  printf("Error in writing to Configuration \n");
+		  printf("Write 80h [0] -  0x%02x\n",wrtBuffer[0] );
+		  printf("Write 80h [0] -  0x%02x\n",wrtBuffer[1] );
 	  }
   }
-  printf("--  STOPING SPI ---- CS HIGH \n\n");
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
-  HAL_Delay(10); // dealy to set the Vbias
-
-//  buffer[1] = 0x00;
-  // Set to 3 wire
-  buffer[1] |= (1 << 4);
-  printf("Set to 3 wire -  0x%02x\n", buffer[1]);
-  // Set the Conversion mode
-  buffer[1] |= (1 << 6);
-  printf("Set to Conversion mode -  0x%02x\n", buffer[1]);
-
-  // Set the fault status clear bit
-  buffer[1] |= (1 << 1);
-  printf("Set to fault status clear  bit  -  0x%02x\n", buffer[1]);
-
-  // Set the 50 Hz
-  buffer[1] |= (1 << 0);
-  printf("Set to 50 status bit  -  0x%02x\n", buffer[1]);
-
-  printf("--  STARTING SPI ---- CS LOW for write 80h  \n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))  // to check if the CS pin is low or not
+  HAL_Delay(HAL_DELAY);
+  while(1)
   {
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 2, T_out);
-	  if (!err)
-	  {
-		  printf("Wrote successfully Configuration -  80h \n");
-	  }
-	  else
-	  {
-		  printf("Error in writing to Configuration \n");
-	  }
-  }
-  printf("--  STOPING SPI ---- CS HIGH \n\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
-
-  HAL_Delay(10);
-
-  //----------------------- WRITE HIGH FAULT Threshold   83h and 85h----------------
-  buffer[0] =  0x83;
-  buffer[1] = 0xff;
-  printf("--  STARTING SPI ---- CS LOW for write 83h  \n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))  // to check if the CS pin is low or not
-  {
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 2, T_out);
-	  if (!err)
-	  {
-		  printf("Wrote successfully Configuration -  83h \n");
-	  }
-	  else
-	  {
-		  printf("Error in writing to Configuration \n");
-	  }
-  }
-  printf("--  STOPING SPI ---- CS HIGH \n\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
-  HAL_Delay(10);
-
-  buffer[0] = 0x85;
-  buffer[1]= 0x00;
-  printf("--  STARTING SPI ---- CS LOW for write 85h  \n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))  // to check if the CS pin is low or not
-  {
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 2, T_out);
-	  if (!err)
-	  {
-		  printf("Wrote successfully Configuration -  85h \n");
-	  }
-	  else
-	  {
-		  printf("Error in writing to Configuration \n");
-	  }
-  }
-  printf("--  STOPING SPI ---- CS HIGH \n\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
-  HAL_Delay(10);
-
-  //----------------------- WRITE HIGH FAULT Threshold   84h and 86h----------------
-  buffer[0] =  0x84;
-  buffer[1] = 0xff;
-  printf("--  STARTING SPI ---- CS LOW for write 84h  \n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))  // to check if the CS pin is low or not
-  {
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 2, T_out);
-	  if (!err)
-	  {
-		  printf("Wrote successfully Configuration -  84h \n");
-	  }
-	  else
-	  {
-		  printf("Error in writing to Configuration \n");
-	  }
-  }
-  printf("--  STOPING SPI ---- CS HIGH \n\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
-  HAL_Delay(10);
-
-  buffer[0] = 0x86;
-  buffer[1] = 0x00;
-  printf("--  STARTING SPI ---- CS LOW for write 86h  \n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))  // to check if the CS pin is low or not
-  {
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 2, T_out);
-	  if (!err)
-	  {
-		  printf("Wrote successfully Configuration -  86h \n");
-	  }
-	  else
-	  {
-		  printf("Error in writing to Configuration \n");
-	  }
-  }
-  printf("--  STOPING SPI ---- CS HIGH \n\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
-  HAL_Delay(10);
-
   //----------------------- READ CONFIG BACK  00h----------------
-  printf("--  STARTING SPI ---- CS LOW for Read 00h \n");
+
+  wrtBuffer[0] = 0x00;
+  wrtBuffer[1] = 0xFF;
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  buffer[0] = 0x00;
-  buffer[1] = 0x00;
-  uint8_t rxData = 0x00;
   if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
   {
 	  // reading the configuration register  back again to validate write
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-	  err = HAL_SPI_Receive(&hspi1, &rxData,1,T_out);
-
+	  err = HAL_SPI_TransmitReceive(&hspi1, wrtBuffer, rxData, 2, T_out);
+//	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+//	  err = HAL_SPI_Receive(&hspi1, rxData, 1, T_out);
 	  if (!err)
 	  {
-		  printf("Configuration register  ---- 0x%02x\t\n", buffer[0]);
-		  printf("Buffer[1] ---- 0x%02x\t\n", buffer[1]);
-		  printf("Configuration read back Data  ---- 0x%02x\t\n", rxData);
+		  printf("00h [0]  ---- 0x%02x\n", rxData[0]);
+		  printf("00h [1]  ---- 0x%02x\n", rxData[1]);
 	  }
-	  else
-	  {
-		  printf("Error\n");
-	  }
-
-  }
-  printf("--  STOPING SPI ---- CS HIGH \n\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-  HAL_Delay(10);
-  //----------------------- READ FAULT REGISTER 07h ----------------
-  printf("--  STARTING SPI ---- CS LOW for read 07h \n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  buffer[0] |= 0x07;
-  uint8_t fData = 0x00;
-  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-  {
-	  // reading the configuration register  back again to validate write
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-	  err = HAL_SPI_Receive(&hspi1, &fData,1,T_out);
-	  if (!err)
-	  {
-		  printf("Fault Status register  ---- 0x%02x\t\n", buffer[0]);
-		  printf("Configuration read back  ---- 0x%02x\t\n", buffer[1]);
-		  printf("Fault Status Data  ---- 0x%02x\t\n", fData);
-	  }
-	  else
-	  {
-		  printf("Error\n");
-	  }
-
-  }
-  printf("--  STOPING SPI ---- CS HIGH \n\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-  HAL_Delay(10);
-  printf("--  STARTING SPI ---- CS LOW for read 03/04h Initial\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  //----------------------- READ HIGH FAULT THRESHOLD  03/4h----------------
-  buffer[0] =  0x03;
-  uint8_t rfhtMSB = 0;
-  uint8_t rfhtLSB = 0;
-  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-  {
-	  // reading the configuration register  back again to validate write
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-	  err = HAL_SPI_Receive(&hspi1, &rfhtMSB,1,T_out);
-
-	  if (!err)
-	  {
-		  printf("Configuration register  ---- 0x%02x\t\n", buffer[0]);
-		  printf("Buffer[1] ---- 0x%02x\t\n", buffer[1]);
-		  printf("Initial Value of rfhtMSB  ---- 0x%02x\t\n", rfhtMSB);
-	  }
-	  else
-	  {
-		  printf("Error\n");
-	  }
-
   }
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-  HAL_Delay(10);
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  buffer[0] =  0x04;
-  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-  {
-	  // reading the configuration register  back again to validate write
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-	  err = HAL_SPI_Receive(&hspi1, &rfhtLSB,1,T_out);
 
-	  if (!err)
-	  {
-		  printf("Configuration register  ---- 0x%02x\t\n", buffer[0]);
-		  printf("Buffer[1] ---- 0x%02x\t\n", buffer[1]);
-		  printf("Initial Value of rfhtLSB  ---- 0x%02x\t\n", rfhtLSB);
-	  }
-	  else
-	  {
-		  printf("Error\n");
-	  }
+  //----------------------- READ CONFIG BACK  07h----------------
 
+    wrtBuffer[0] = 0x07;
+    wrtBuffer[1] = 0xFF;
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+    if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
+    {
+  	  // reading the configuration register  back again to validate write
+  	  err = HAL_SPI_TransmitReceive(&hspi1, wrtBuffer, rfData, 2, T_out);
+  	  if (!err)
+  	  {
+  		  printf("07h [0]  ---- 0x%02x\n", rfData[0]);
+  		  printf("07h [1]  ---- 0x%02x\n", rfData[1]);
+  	  }
+    }
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+
+  HAL_Delay(1000);
   }
-  printf("--  STOPING SPI ---- CS HIGH \n\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-  HAL_Delay(10);
-  printf("--  STARTING SPI ---- CS LOW for read 05/06h Initial\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  //----------------------- READ LOW FAULT THRESHOLD  05/6h----------------
-  buffer[0] = 0x05;
-  uint8_t rlftMSB = 0;
-  uint8_t rlftLSB = 0;
-  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-  {
-	  // reading the configuration register  back again to validate write
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-	  err = HAL_SPI_Receive(&hspi1, &rlftMSB,1,T_out);
-
-	  if (!err)
-	  {
-		  printf("Configuration register  ---- 0x%02x\t\n", buffer[0]);
-		  printf("Buffer[1] ---- 0x%02x\t\n", buffer[1]);
-		  printf("Initial Value of rlftMSB  ---- 0x%02x\t\n", rlftMSB);
-	  }
-	  else
-	  {
-		  printf("Error\n");
-	  }
-
-  }
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-  HAL_Delay(10);
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  buffer[0] = 0x06;
-  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-  {
-	  // reading the configuration register  back again to validate write
-	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-	  err = HAL_SPI_Receive(&hspi1, &rlftLSB,1,T_out);
-
-	  if (!err)
-	  {
-		  printf("Configuration register  ---- 0x%02x\t\n", buffer[0]);
-		  printf("Buffer[1] ---- 0x%02x\t\n", buffer[1]);
-		  printf("Initial Value rlftLSB  ---- 0x%02x\t\n", rlftLSB);
-	  }
-	  else
-	  {
-		  printf("Error\n");
-	  }
-
-  }
-  printf("--  STOPING SPI ---- CS HIGH \n\n");
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
-
-
-  //----------------------- READ RTD -----01h and 02h  ----------------
-//  while (!HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15))
-//  {
-//	  buffer[0] =  0x00;
-//	  buffer[1] =  0x00;
-//	  uint8_t rxData = 0;
-//
-//	  // 4. read the RTD MSB
-//	  // setting the address of RTD MSBs 0x01 =  0000 0001b
-//	  buffer[0] = 0x01 ;
-//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-////	  buffer[0] = 0x00;
-//	  err = HAL_SPI_Receive(&hspi1, &rxData,1,T_out);
-//	  // Take inTO RAW BUFFER
-//	  Raw_data |= ((uint16_t)rxData << 8U );
-//	  if (!err)
-//	  		{
-//	  		  printf("RTD MSB ---- %#x\t\n", rxData);
-//	  		  printf("Raw_data  ---- %#x\t\n",Raw_data);
-//	  		}
-//	  else
-//	  		{
-//	  		  printf("Error\n");
-//
-//	  		}
-//
-//	  buffer[0] =  0x00;
-//	  buffer[1] =  0x00;
-//
-//	  // 5. read the RTD LSB  0x02
-//	  buffer[0] = 0x02;
-//	  err = HAL_SPI_Transmit(&hspi1, buffer, 1, T_out);
-////	  buffer[0] = 0x00;
-//	  err = HAL_SPI_Receive(&hspi1, &rxData, 1,T_out);
-//	  // Take inTO RAW BUFFER
-//	  Raw_data |= (rxData & 0x00FE);
-//	  if (!err)
-//		  		{
-//		  		  printf("RTD LSB ---- %#x\t\n", rxData);
-//		  		  printf("Raw_data  ---- %#x\t\n",Raw_data);
-//		  		}
-//	  else
-//			{
-//			  printf("Error\n");
-//
-//			}
-//
-//	  // 6. Check the fault status D0 of 02h
-//	  if(rxData & 0x01)
-//	  {
-//		  printf ("Fault D0 bit is set at 02h\n");
-//		  break;
-//	  }
-//
-//	  // ----------------------CONVERT THE RAW DATA into Temperature
-//	  temp =  ((float)Raw_data * rTD_rEF ) / mAX_tEMP;
-//	  printf ("Temperature value   %f\n", temp);
-//	  Raw_data =  0x0000;
-//  }
-
-
-
 
 
   /* USER CODE END 2 */
@@ -755,9 +323,9 @@ static void MX_SPI1_Init(void)
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -803,7 +371,7 @@ static void MX_GPIO_Init(void)
                           |Audio_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(SPI_1_CS_PIN_GPIO_Port, SPI_1_CS_PIN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : CS_I2C_SPI_Pin */
   GPIO_InitStruct.Pin = CS_I2C_SPI_Pin;
@@ -856,12 +424,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_15;
+  /*Configure GPIO pin : SPI_1_CS_PIN_Pin */
+  GPIO_InitStruct.Pin = SPI_1_CS_PIN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(SPI_1_CS_PIN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : OTG_FS_OverCurrent_Pin */
   GPIO_InitStruct.Pin = OTG_FS_OverCurrent_Pin;
