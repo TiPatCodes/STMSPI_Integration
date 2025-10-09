@@ -71,6 +71,8 @@ void MX_USB_HOST_Process(void);
 
 uint8_t rxData[2] = {0x00,0x00};
 uint8_t rfData[2] = {0x00,0x00};
+uint8_t rhfData[2] = {0x00,0x00};
+uint8_t rlfData[2] = {0x00,0x00};
 uint8_t wrtBuffer[2] = {0x00,0x00};
 HAL_StatusTypeDef  err;
 uint8_t  T_out = 100;
@@ -115,7 +117,45 @@ int main(void)
   // ----------------PULL CS PIN LOW --------- GPIOA PIN 15 ------------
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
+ HAL_Delay( HAL_DELAY);
+  //----------------------- READ CONFIG BACK  03h----------------
 
+    wrtBuffer[0] = 0x03;
+    wrtBuffer[1] = 0xFF;
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+    if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
+    {
+  	  // reading the configuration register  back again to validate write
+  //	  err = HAL_SPI_TransmitReceive(&hspi1, wrtBuffer, rxData, 2, T_out);
+  	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+  	  err = HAL_SPI_Receive(&hspi1, rhfData, 1, T_out);
+  	  if (!err)
+  	  {
+  		  printf("03h [0]  ---- 0x%02x\n", rhfData[0]);
+  		  printf("03h [1]  ---- 0x%02x\n", rhfData[1]);
+  	  }
+    }
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+    HAL_Delay(HAL_DELAY);
+    //----------------------- READ CONFIG BACK  05h----------------
+
+      wrtBuffer[0] = 0x05;
+      wrtBuffer[1] = 0xFF;
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+      if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
+      {
+    	  // reading the configuration register  back again to validate write
+    //	  err = HAL_SPI_TransmitReceive(&hspi1, wrtBuffer, rxData, 2, T_out);
+    	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+    	  err = HAL_SPI_Receive(&hspi1, rlfData, 1, T_out);
+    	  if (!err)
+    	  {
+    		  printf("05h [0]  ---- 0x%02x\n", rlfData[0]);
+    		  printf("05h [1]  ---- 0x%02x\n", rlfData[1]);
+    	  }
+      }
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+      HAL_Delay(HAL_DELAY);
   //--------------------------WRITE CONFIG 80h---------------------------
   // with buffer[0]as address
   wrtBuffer[0] =  0x80;
@@ -133,6 +173,84 @@ int main(void)
   }
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
   HAL_Delay(HAL_DELAY);
+
+  //--------------------------WRITE CONFIG 83h---------------------------
+    // with buffer[0]as address
+    wrtBuffer[0] =  0x83;
+    //with buffer[1] as data
+    wrtBuffer[1] =  0xCC;
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+    if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))  // to check if the CS pin is low or not
+    {
+  	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 2, T_out);
+  	  if (!err)
+  	  {
+  		  printf("Write 83h [0] -  0x%02x\n",wrtBuffer[0] );
+  		  printf("Write 83h [0] -  0x%02x\n",wrtBuffer[1] );
+  	  }
+    }
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+    HAL_Delay(HAL_DELAY);
+
+    //--------------------------WRITE CONFIG 85h---------------------------
+        // with buffer[0]as address
+        wrtBuffer[0] =  0x85;
+        //with buffer[1] as data
+        wrtBuffer[1] =  0x11;
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+        if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))  // to check if the CS pin is low or not
+        {
+      	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 2, T_out);
+      	  if (!err)
+      	  {
+      		  printf("Write 85h [0] -  0x%02x\n",wrtBuffer[0] );
+      		  printf("Write 85h [0] -  0x%02x\n",wrtBuffer[1] );
+      	  }
+        }
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+        HAL_Delay(HAL_DELAY);
+
+        //----------------------- READ CONFIG BACK  03h----------------
+
+          wrtBuffer[0] = 0x03;
+          rhfData [0] = 0x00;
+          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+          if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
+          {
+        	  // reading the configuration register  back again to validate write
+        //	  err = HAL_SPI_TransmitReceive(&hspi1, wrtBuffer, rxData, 2, T_out);
+        	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+        	  err = HAL_SPI_Receive(&hspi1, rhfData, 1, T_out);
+        	  if (!err)
+        	  {
+        		  printf("03h [0]  ---- 0x%02x\n", rhfData[0]);
+        		  printf("03h [1]  ---- 0x%02x\n", rhfData[1]);
+        	  }
+          }
+          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+          HAL_Delay(HAL_DELAY);
+          //----------------------- READ CONFIG BACK  05h----------------
+
+            wrtBuffer[0] = 0x05;
+            rlfData [0] = 0x00;
+            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+            if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
+            {
+          	  // reading the configuration register  back again to validate write
+          //	  err = HAL_SPI_TransmitReceive(&hspi1, wrtBuffer, rxData, 2, T_out);
+          	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+          	  err = HAL_SPI_Receive(&hspi1, rlfData, 1, T_out);
+          	  if (!err)
+          	  {
+          		  printf("05h [0]  ---- 0x%02x\n", rlfData[0]);
+          		  printf("05h [1]  ---- 0x%02x\n", rlfData[1]);
+          	  }
+            }
+            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+            HAL_Delay(HAL_DELAY);
+
+
+
   while(1)
   {
   //----------------------- READ CONFIG BACK  00h----------------
@@ -143,9 +261,9 @@ int main(void)
   if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
   {
 	  // reading the configuration register  back again to validate write
-	  err = HAL_SPI_TransmitReceive(&hspi1, wrtBuffer, rxData, 2, T_out);
-//	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
-//	  err = HAL_SPI_Receive(&hspi1, rxData, 1, T_out);
+//	  err = HAL_SPI_TransmitReceive(&hspi1, wrtBuffer, rxData, 2, T_out);
+	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+	  err = HAL_SPI_Receive(&hspi1, rxData, 1, T_out);
 	  if (!err)
 	  {
 		  printf("00h [0]  ---- 0x%02x\n", rxData[0]);
@@ -162,7 +280,9 @@ int main(void)
     if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
     {
   	  // reading the configuration register  back again to validate write
-  	  err = HAL_SPI_TransmitReceive(&hspi1, wrtBuffer, rfData, 2, T_out);
+//  	  err = HAL_SPI_TransmitReceive(&hspi1, wrtBuffer, rfData, 2, T_out);
+  	err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+  		  err = HAL_SPI_Receive(&hspi1, rfData, 1, T_out);
   	  if (!err)
   	  {
   		  printf("07h [0]  ---- 0x%02x\n", rfData[0]);
@@ -322,10 +442,10 @@ static void MX_SPI1_Init(void)
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
