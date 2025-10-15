@@ -34,12 +34,19 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define HAL_DELAY  (10)
-#define MAX_UINT16  (32768U)
-#define PTD_Ref  (4300U)
-#define RTD_A 3.9083e-3
-#define RTD_B -5.775e-7
-#define RTDnominal 1000.0
+#define HAL_DELAY      	 													(10)
+#define MAX_UINT16 															 (32768.0)
+#define PTD_Ref 																	 (4300.0)
+#define RTD_A 																		 (3.9083e-3)
+#define RTD_B  																		 (-5.775e-7)
+#define RTDnominal     													   	(1000.0)
+#define MAX31865_FAULT_HIGHTHRESH 				(0x80)
+#define MAX31865_FAULT_LOWTHRESH 					(0x40)
+#define MAX31865_FAULT_REFINLOW       				(0x20)
+#define MAX31865_FAULT_REFINHIGH						 (0x10)
+#define MAX31865_FAULT_RTDINLOW						 (0x08)
+#define MAX31865_FAULT_OVUV									 (0x04)
+
 
 /* USER CODE END PD */
 
@@ -309,6 +316,7 @@ int main(void)
   while(!(rfcData[1]))
   {
 	temp = 0.0;
+	adc_Ratio = 0;
 	 //----------------------- READ CONFIG BACK  07h----------------
 	wrtBuffer[0] = 0x07;
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
@@ -340,9 +348,10 @@ int main(void)
 		err = HAL_SPI_Receive(&hspi1, &rxData[1], 1, T_out);
 	}
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+
 	printf("MSB rxData  ---- 0x%02x\n", rxData[0]);
-	printf("LSB rxData  ---- 0x%02x\n", rxData[1]);
-	adc_Ratio |= (uint16_t)rxData[0]  << 8 ;
+	printf("LSB  rxData  ---- 0x%02x\n", rxData[1]);
+	adc_Ratio |= ((uint16_t)rxData[0]  << 8) ;
 	adc_Ratio |= rxData[1];
 	adc_Ratio >>= 1; // (remove the LSB Fault bias bit)
 	printf("ADC_Data  ---- 0x%04x\n", adc_Ratio);
@@ -362,7 +371,13 @@ int main(void)
 	HAL_Delay(2000);
   }
 
-  printf("~~STOP~~~~\n");
+  printf("~~~~STOP~~~~\n");
+  if ((rfcData[1])  & MAX31865_FAULT_HIGHTHRESH) printf ("RTD High Threshold\r\n");
+  if ((rfcData[1])  & MAX31865_FAULT_LOWTHRESH) printf ("RTD Low Threshold\r\n");
+  if ((rfcData[1])  & MAX31865_FAULT_REFINLOW) printf ("REFIN- < 0.85 x Bias\r\n");
+  if ((rfcData[1])  & MAX31865_FAULT_REFINHIGH) printf ("REFIN+ > 0.85 x Bias - FORCE+ open\r\n");
+  if ((rfcData[1])  & MAX31865_FAULT_RTDINLOW) printf ("RTDIN- < 0.85 x Bias - FORCE- open\r\n");
+  if ((rfcData[1])  & MAX31865_FAULT_OVUV) printf ("Under/Over voltage\r\n");
 
 
 
