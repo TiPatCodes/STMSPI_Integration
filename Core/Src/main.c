@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <math.h>
 
 /* USER CODE END Includes */
 
@@ -34,8 +35,11 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define HAL_DELAY  (10)
-#define MAX_UINT16  (32768)
-#define PTD_Ref  (4300)
+#define MAX_UINT16  (32768U)
+#define PTD_Ref  (4300U)
+#define RTD_A 3.9083e-3
+#define RTD_B -5.775e-7
+#define RTDnominal 1000.0
 
 /* USER CODE END PD */
 
@@ -77,8 +81,8 @@ uint8_t rlfData[2] = {0x00,0x00};
 uint8_t wrtBuffer[2] = {0x00,0x00};
 HAL_StatusTypeDef  err;
 uint8_t  T_out = 100;
-uint16_t adc_Ratio;
-float  rtd_Value;
+uint16_t adc_Ratio = 0;
+float  rtd_Value,Z1,Z2,Z3,Z4,temp = 0.0;
 
 
 /* USER CODE END 0 */
@@ -120,7 +124,7 @@ int main(void)
   // ----------------PULL CS PIN LOW --------- GPIOA PIN 15 ------------
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
- HAL_Delay( HAL_DELAY);
+  HAL_Delay( HAL_DELAY);
   //----------------------- READ CONFIG BACK  01h----------------
     wrtBuffer[0] = 0x01;
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
@@ -135,7 +139,7 @@ int main(void)
     }
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
-    //----------------------- READ CONFIG BACK  02h----------------
+      //----------------------- READ CONFIG BACK  02h----------------
       wrtBuffer[0] = 0x02;
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
       if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
@@ -148,7 +152,7 @@ int main(void)
     	  }
       }
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-  //--------------------------WRITE CONFIG 80h---------------------------
+      //--------------------------WRITE CONFIG 80h---------------------------
 	  // with buffer[0]as address
 	  wrtBuffer[0] =  0x80;
 	  //with buffer[1] as data
@@ -166,8 +170,8 @@ int main(void)
 	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	  HAL_Delay(HAL_DELAY);
 
-  //--------------------------WRITE CONFIG 83h---------------------------
-    // with buffer[0]as address
+	//--------------------------WRITE CONFIG 83h---------------------------
+	// with buffer[0]as address
     wrtBuffer[0] =  0x83;
     //with buffer[1] as data
     wrtBuffer[1] =  0xCC;
@@ -285,71 +289,82 @@ int main(void)
 	}
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
-	  //----------------------- READ CONFIG BACK  00h----------------
-	  wrtBuffer[0] = 0x00;
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-	  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
+	//----------------------- READ CONFIG BACK  00h----------------
+	wrtBuffer[0] = 0x00;
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+	if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
+	{
+	  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+	  err = HAL_SPI_Receive(&hspi1, &rfcData[0], 1, T_out);
+	  if (!err)
 	  {
-		  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
-		  err = HAL_SPI_Receive(&hspi1, &rfcData[0], 1, T_out);
-		  if (!err)
-		  {
-			  printf("00h rfcData[0]  ---- 0x%02x\n", rfcData[0]);
-		  }
+		  printf("00h rfcData[0]  ---- 0x%02x\n", rfcData[0]);
 	  }
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+	}
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	HAL_Delay(HAL_DELAY);
 	printf("=============\n");
 
 
   while(!(rfcData[1]))
   {
-			  //----------------------- READ CONFIG BACK  07h----------------
-				wrtBuffer[0] = 0x07;
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-				if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-				{
-					err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
-					err = HAL_SPI_Receive(&hspi1, &rfcData[1], 1, T_out);
-				  if (!err)
-				  {
-					  printf("07h rfcData[1]  ---- 0x%02x\n", rfcData[1]);
-				  }
-				}
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-				//----------------------- READ CONFIG BACK  01h----------------
-				  wrtBuffer[0] = 0x01;
-				  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-				  if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-				  {
-					  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
-					  err = HAL_SPI_Receive(&hspi1, &rxData[0], 1, T_out);
-				  }
-				  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-				  //----------------------- READ CONFIG BACK  02h----------------
-					wrtBuffer[0] = 0x02;
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-					if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
-					{
-					  err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
-					  err = HAL_SPI_Receive(&hspi1, &rxData[1], 1, T_out);
-					}
+	temp = 0.0;
+	 //----------------------- READ CONFIG BACK  07h----------------
+	wrtBuffer[0] = 0x07;
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+	if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
+	{
+	err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+	err = HAL_SPI_Receive(&hspi1, &rfcData[1], 1, T_out);
+	if (!err)
+	  {
+		  printf("07h rfcData[1]  ---- 0x%02x\n", rfcData[1]);
+	  }
+	}
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+	//----------------------- READ CONFIG BACK  01h----------------
+	wrtBuffer[0] = 0x01;
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+	if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
+	{
+		err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+		err = HAL_SPI_Receive(&hspi1, &rxData[0], 1, T_out);
+	}
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+	//----------------------- READ CONFIG BACK  02h----------------
+	wrtBuffer[0] = 0x02;
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+	if (! (HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)))
+	{
+		err = HAL_SPI_Transmit(&hspi1, wrtBuffer, 1, T_out);
+		err = HAL_SPI_Receive(&hspi1, &rxData[1], 1, T_out);
+	}
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+	printf("MSB rxData  ---- 0x%02x\n", rxData[0]);
+	printf("LSB rxData  ---- 0x%02x\n", rxData[1]);
+	adc_Ratio |= (uint16_t)rxData[0]  << 8 ;
+	adc_Ratio |= rxData[1];
+	adc_Ratio >>= 1; // (remove the LSB Fault bias bit)
+	printf("ADC_Data  ---- 0x%04x\n", adc_Ratio);
+	rtd_Value =  (float)((adc_Ratio)* (PTD_Ref) / ( MAX_UINT16));
+	printf("RTD Value  ---- %0.2f\n", rtd_Value);
+	// conversion into temperature
+	Z1 = -RTD_A;
+	Z2 = RTD_A * RTD_A - (4 * RTD_B);
+	Z3 = (4 * RTD_B) / RTDnominal;
+	Z4 = 2 * RTD_B;
 
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-					adc_Ratio |= (uint16_t)rxData[0]  << 8 ;
-					rxData |= rxData >> 1;
-					adc_Ratio |= rxData[1] << 1;
+	temp = Z2 + (Z3 * rtd_Value);
+	temp = (sqrt(temp) + Z1) / Z4;
 
-					printf("adc_Data  ---- 0x%04x\n", adc_Ratio);
-
-					rtd_Value =  (float)((adc_Ratio *  PTD_Ref) / ( MAX_UINT16));
-
-					printf("RTD Value  ---- %f\n", rtd_Value);
-
-					// conversion into temperature
-
-					HAL_Delay(1000);
+	if (temp >= 0.0) printf("Temperature is %0.2f degC\n",temp);
+	printf("~~~~~~~~\n");
+	HAL_Delay(2000);
   }
+
+  printf("~~STOP~~~~\n");
+
+
 
 
   /* USER CODE END 2 */
